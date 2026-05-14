@@ -4,18 +4,42 @@ const pool = require('../db/connection');
 function createCrudRouter(tableName, { orderBy = 'id DESC', searchFields = [] } = {}) {
   const router = express.Router();
 
-  // GET all
+  // GET all — supports ?search=, ?page=, ?limit=
   router.get('/', async (req, res) => {
     try {
-      const { search } = req.query;
+      const { search, page, limit = 20 } = req.query;
       let query = `SELECT * FROM ${tableName}`;
+      let countQuery = `SELECT COUNT(*) FROM ${tableName}`;
       let params = [];
+
       if (search && searchFields.length > 0) {
         const conditions = searchFields.map((f, i) => `${f} ILIKE $${i + 1}`);
-        query += ` WHERE ${conditions.join(' OR ')}`;
+        const whereClause = ` WHERE ${conditions.join(' OR ')}`;
+        query += whereClause;
+        countQuery += whereClause;
         params = searchFields.map(() => `%${search}%`);
       }
+
       query += ` ORDER BY ${orderBy}`;
+
+      if (page) {
+        const pageNum = Math.max(1, Number(page));
+        const limitNum = Math.min(100, Math.max(1, Number(limit)));
+        const offset = (pageNum - 1) * limitNum;
+        const paginatedParams = [...params, limitNum, offset];
+        query += ` LIMIT $${paginatedParams.length - 1} OFFSET $${paginatedParams.length}`;
+
+        const [result, countResult] = await Promise.all([
+          pool.query(query, paginatedParams),
+          pool.query(countQuery, params)
+        ]);
+        const total = Number(countResult.rows[0].count);
+        return res.json({
+          data: result.rows,
+          pagination: { total, page: pageNum, limit: limitNum, total_pages: Math.ceil(total / limitNum) }
+        });
+      }
+
       const result = await pool.query(query, params);
       res.json(result.rows);
     } catch (err) {

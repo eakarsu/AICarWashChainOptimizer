@@ -1,25 +1,111 @@
 const express = require('express');
 const router = express.Router();
-const { queryAI } = require('../services/openrouter');
 const pool = require('../db/connection');
+const { aiRateLimiter } = require('../middleware/rateLimiter');
+const { fetchWeatherForecast } = require('../services/weatherService');
 
-// Weather Demand Forecasting
+const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
+const OPENROUTER_MODEL = process.env.OPENROUTER_MODEL || 'anthropic/claude-3-5-sonnet-20241022';
+const SYSTEM_PROMPT = 'You are an AI car wash operations optimization expert. Analyze operational data and provide actionable recommendations for demand, staffing, maintenance, and revenue optimization.';
+
+// ─── Helpers ────────────────────────────────────────────────────────────────
+
+/**
+ * Call OpenRouter and return parsed JSON. Retries once with explicit JSON instruction on parse failure.
+ */
+async function callAI(userPrompt, attempt = 1) {
+  const extraInstruction = attempt > 1
+    ? '\n\nCRITICAL: Your response MUST be valid JSON only. No markdown, no explanation, no backticks. Start with { and end with }.'
+    : '';
+
+  const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${OPENROUTER_API_KEY}`,
+      'Content-Type': 'application/json',
+      'HTTP-Referer': 'http://localhost:3000',
+      'X-Title': 'AI Car Wash Chain Optimizer'
+    },
+    body: JSON.stringify({
+      model: OPENROUTER_MODEL,
+      messages: [
+        { role: 'system', content: SYSTEM_PROMPT + '\n\nAlways respond with valid JSON only. No markdown fences.' },
+        { role: 'user', content: userPrompt + extraInstruction }
+      ],
+      temperature: 0.7,
+      max_tokens: 2000
+    })
+  });
+
+  const data = await response.json();
+  if (data.error) throw new Error(data.error.message || 'OpenRouter API error');
+
+  const raw = data.choices[0].message.content.trim();
+  // Strip markdown code fences if present
+  const cleaned = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
+
+  try {
+    return JSON.parse(cleaned);
+  } catch (parseErr) {
+    if (attempt < 2) {
+      console.warn('[AI] JSON parse failed on attempt 1, retrying with explicit instruction...');
+      return callAI(userPrompt, 2);
+    }
+    // Return structured error with raw text so the caller still gets something useful
+    throw Object.assign(new Error('AI response was not valid JSON after retry'), {
+      rawResponse: cleaned,
+      parseError: parseErr.message
+    });
+  }
+}
+
+function validateRequired(body, fields) {
+  const missing = fields.filter(f => body[f] === undefined || body[f] === null || body[f] === '');
+  return missing;
+}
+
+function handleAIError(res, err, fallback) {
+  console.error('[AI Route Error]', err.message);
+  if (err.rawResponse) {
+    return res.status(200).json({
+      error: 'AI returned invalid JSON',
+      parseError: err.parseError,
+      rawResponse: err.rawResponse,
+      fallback
+    });
+  }
+  return res.status(500).json({ error: err.message, fallback });
+}
+
+// Apply rate limiter to all AI routes
+router.use(aiRateLimiter);
+
+// ─── 1. Weather Demand Forecasting (uses live weather when available) ────────
+
 router.post('/weather-forecast', async (req, res) => {
   try {
     const { location_id } = req.body;
-    const location = await pool.query('SELECT * FROM locations WHERE id = $1', [location_id]);
-    const weather = await pool.query('SELECT * FROM weather_forecasts WHERE location_id = $1 ORDER BY forecast_date', [location_id]);
+    const missing = validateRequired(req.body, ['location_id']);
+    if (missing.length) return res.status(400).json({ error: `Missing required fields: ${missing.join(', ')}` });
+
+    const locationResult = await pool.query('SELECT * FROM locations WHERE id = $1', [location_id]);
+    if (locationResult.rows.length === 0) return res.status(404).json({ error: 'Location not found' });
+
     const revenue = await pool.query('SELECT * FROM revenue_analytics WHERE location_id = $1 ORDER BY date DESC LIMIT 7', [location_id]);
 
-    const prompt = `You are an AI car wash demand forecasting expert. Analyze the following data and provide a detailed demand forecast.
+    // Use live weather when available, fall back to DB
+    const weatherData = await fetchWeatherForecast(location_id);
 
-Location: ${JSON.stringify(location.rows[0])}
-Weather Forecasts: ${JSON.stringify(weather.rows)}
+    const prompt = `Analyze the following data and provide a detailed demand forecast for a car wash location.
+
+Location: ${JSON.stringify(locationResult.rows[0])}
+Weather Forecasts (source: ${weatherData.source}): ${JSON.stringify(weatherData.data)}
 Recent Revenue: ${JSON.stringify(revenue.rows)}
 
 Provide a JSON response with this structure:
 {
   "forecast_summary": "Brief overview",
+  "weather_data_source": "${weatherData.source}",
   "daily_predictions": [{"date": "YYYY-MM-DD", "predicted_cars": number, "confidence": number, "demand_level": "high/medium/low", "reasoning": "why"}],
   "recommendations": ["actionable recommendation 1", "recommendation 2"],
   "revenue_impact": "Expected revenue impact description",
@@ -27,24 +113,32 @@ Provide a JSON response with this structure:
   "risk_factors": ["risk 1", "risk 2"]
 }`;
 
-    const result = await queryAI(
-      'You are a car wash business analytics AI. Always respond with valid JSON only.',
-      prompt
-    );
-    res.json({ analysis: result, type: 'weather_forecast' });
+    try {
+      const result = await callAI(prompt);
+      res.json({ analysis: result, type: 'weather_forecast', weather_source: weatherData.source });
+    } catch (aiErr) {
+      handleAIError(res, aiErr, { weather_source: weatherData.source });
+    }
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// Chemical Dosing Optimization
+// ─── 2. Chemical Dosing Optimization ────────────────────────────────────────
+
 router.post('/chemical-dosing', async (req, res) => {
   try {
     const { location_id } = req.body;
-    const dosing = await pool.query('SELECT cd.*, c.name as chemical_name, c.type as chemical_type FROM chemical_dosing cd JOIN chemicals c ON cd.chemical_id = c.id WHERE cd.location_id = $1', [location_id]);
+    const missing = validateRequired(req.body, ['location_id']);
+    if (missing.length) return res.status(400).json({ error: `Missing required fields: ${missing.join(', ')}` });
+
+    const dosing = await pool.query(
+      'SELECT cd.*, c.name as chemical_name, c.type as chemical_type FROM chemical_dosing cd JOIN chemicals c ON cd.chemical_id = c.id WHERE cd.location_id = $1',
+      [location_id]
+    );
     const chemicals = await pool.query('SELECT * FROM chemicals WHERE location_id = $1', [location_id]);
 
-    const prompt = `You are an AI chemical dosing optimization expert for car washes. Analyze the following data.
+    const prompt = `Analyze chemical dosing data for a car wash and provide optimization recommendations.
 
 Chemical Inventory: ${JSON.stringify(chemicals.rows)}
 Dosing History: ${JSON.stringify(dosing.rows)}
@@ -59,24 +153,33 @@ Provide a JSON response:
   "reorder_alerts": [{"chemical": "name", "days_until_reorder": number, "priority": "high/medium/low"}]
 }`;
 
-    const result = await queryAI(
-      'You are a car wash chemical optimization AI. Always respond with valid JSON only.',
-      prompt
-    );
-    res.json({ analysis: result, type: 'chemical_dosing' });
+    try {
+      const result = await callAI(prompt);
+      res.json({ analysis: result, type: 'chemical_dosing' });
+    } catch (aiErr) {
+      handleAIError(res, aiErr, null);
+    }
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// Equipment Maintenance Prediction
+// ─── 3. Equipment Maintenance Prediction ────────────────────────────────────
+
 router.post('/maintenance-prediction', async (req, res) => {
   try {
     const { equipment_id } = req.body;
-    const equipment = await pool.query('SELECT * FROM equipment WHERE id = $1', [equipment_id]);
-    const predictions = await pool.query('SELECT * FROM maintenance_predictions WHERE equipment_id = $1 ORDER BY created_at DESC', [equipment_id]);
+    const missing = validateRequired(req.body, ['equipment_id']);
+    if (missing.length) return res.status(400).json({ error: `Missing required fields: ${missing.join(', ')}` });
 
-    const prompt = `You are an AI predictive maintenance expert for car wash equipment. Analyze this equipment data.
+    const equipment = await pool.query('SELECT * FROM equipment WHERE id = $1', [equipment_id]);
+    if (equipment.rows.length === 0) return res.status(404).json({ error: 'Equipment not found' });
+    const predictions = await pool.query(
+      'SELECT * FROM maintenance_predictions WHERE equipment_id = $1 ORDER BY created_at DESC',
+      [equipment_id]
+    );
+
+    const prompt = `Analyze equipment data and predict maintenance needs for a car wash.
 
 Equipment: ${JSON.stringify(equipment.rows[0])}
 Maintenance History: ${JSON.stringify(predictions.rows)}
@@ -92,25 +195,40 @@ Provide a JSON response:
   "lifecycle_position": "Where equipment is in its lifecycle"
 }`;
 
-    const result = await queryAI(
-      'You are a car wash equipment maintenance AI. Always respond with valid JSON only.',
-      prompt
-    );
-    res.json({ analysis: result, type: 'maintenance_prediction' });
+    try {
+      const result = await callAI(prompt);
+      res.json({ analysis: result, type: 'maintenance_prediction' });
+    } catch (aiErr) {
+      handleAIError(res, aiErr, null);
+    }
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// Smart Staffing Optimization
+// ─── 4. Smart Staffing Optimization ─────────────────────────────────────────
+
 router.post('/staffing-optimization', async (req, res) => {
   try {
     const { location_id, date } = req.body;
-    const employees = await pool.query('SELECT * FROM employees WHERE location_id = $1 AND status = $2', [location_id, 'active']);
-    const schedules = await pool.query('SELECT * FROM staffing_schedules WHERE location_id = $1 ORDER BY date DESC LIMIT 15', [location_id]);
-    const weather = await pool.query('SELECT * FROM weather_forecasts WHERE location_id = $1 AND forecast_date >= $2 LIMIT 3', [location_id, date || new Date().toISOString().split('T')[0]]);
+    const missing = validateRequired(req.body, ['location_id']);
+    if (missing.length) return res.status(400).json({ error: `Missing required fields: ${missing.join(', ')}` });
 
-    const prompt = `You are an AI staffing optimization expert for car washes. Create an optimal staffing plan.
+    const employees = await pool.query(
+      "SELECT * FROM employees WHERE location_id = $1 AND status = 'active'",
+      [location_id]
+    );
+    const schedules = await pool.query(
+      'SELECT * FROM staffing_schedules WHERE location_id = $1 ORDER BY date DESC LIMIT 15',
+      [location_id]
+    );
+    const targetDate = date || new Date().toISOString().split('T')[0];
+    const weather = await pool.query(
+      'SELECT * FROM weather_forecasts WHERE location_id = $1 AND forecast_date >= $2 LIMIT 3',
+      [location_id, targetDate]
+    );
+
+    const prompt = `Create an optimal staffing plan for a car wash location.
 
 Available Employees: ${JSON.stringify(employees.rows)}
 Recent Schedules: ${JSON.stringify(schedules.rows)}
@@ -127,22 +245,29 @@ Provide a JSON response:
   "efficiency_score": number
 }`;
 
-    const result = await queryAI(
-      'You are a car wash workforce optimization AI. Always respond with valid JSON only.',
-      prompt
-    );
-    res.json({ analysis: result, type: 'staffing_optimization' });
+    try {
+      const result = await callAI(prompt);
+      res.json({ analysis: result, type: 'staffing_optimization' });
+    } catch (aiErr) {
+      handleAIError(res, aiErr, null);
+    }
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// Membership Churn Prediction
+// ─── 5. Membership Churn Prediction ─────────────────────────────────────────
+
 router.post('/churn-prediction', async (req, res) => {
   try {
-    const memberships = await pool.query('SELECT m.*, l.name as location_name FROM memberships m LEFT JOIN locations l ON m.location_id = l.id ORDER BY m.churn_risk DESC');
+    const { page = 1, limit = 100 } = req.query;
+    const offset = (Number(page) - 1) * Number(limit);
+    const memberships = await pool.query(
+      'SELECT m.*, l.name as location_name FROM memberships m LEFT JOIN locations l ON m.location_id = l.id ORDER BY m.churn_risk DESC LIMIT $1 OFFSET $2',
+      [Number(limit), offset]
+    );
 
-    const prompt = `You are an AI customer churn prediction expert. Analyze membership data and predict churn risk.
+    const prompt = `Analyze membership data and predict churn risk for a car wash chain.
 
 Memberships: ${JSON.stringify(memberships.rows)}
 
@@ -156,23 +281,30 @@ Provide a JSON response:
   "top_churn_drivers": ["driver1", "driver2"]
 }`;
 
-    const result = await queryAI(
-      'You are a car wash membership retention AI. Always respond with valid JSON only.',
-      prompt
-    );
-    res.json({ analysis: result, type: 'churn_prediction' });
+    try {
+      const result = await callAI(prompt);
+      res.json({ analysis: result, type: 'churn_prediction' });
+    } catch (aiErr) {
+      handleAIError(res, aiErr, null);
+    }
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// Revenue Optimization
+// ─── 6. Revenue Optimization ─────────────────────────────────────────────────
+
 router.post('/revenue-optimization', async (req, res) => {
   try {
-    const revenue = await pool.query('SELECT ra.*, l.name as location_name FROM revenue_analytics ra JOIN locations l ON ra.location_id = l.id ORDER BY ra.date DESC');
-    const packages = await pool.query('SELECT * FROM service_packages WHERE status = $1', ['active']);
+    const { page = 1, limit = 100 } = req.query;
+    const offset = (Number(page) - 1) * Number(limit);
+    const revenue = await pool.query(
+      'SELECT ra.*, l.name as location_name FROM revenue_analytics ra JOIN locations l ON ra.location_id = l.id ORDER BY ra.date DESC LIMIT $1 OFFSET $2',
+      [Number(limit), offset]
+    );
+    const packages = await pool.query("SELECT * FROM service_packages WHERE status = 'active'");
 
-    const prompt = `You are an AI revenue optimization expert for car wash chains. Analyze revenue data and suggest optimizations.
+    const prompt = `Analyze revenue data and suggest optimizations for a car wash chain.
 
 Revenue Data: ${JSON.stringify(revenue.rows)}
 Service Packages: ${JSON.stringify(packages.rows)}
@@ -187,22 +319,29 @@ Provide a JSON response:
   "monthly_forecast": number
 }`;
 
-    const result = await queryAI(
-      'You are a car wash revenue optimization AI. Always respond with valid JSON only.',
-      prompt
-    );
-    res.json({ analysis: result, type: 'revenue_optimization' });
+    try {
+      const result = await callAI(prompt);
+      res.json({ analysis: result, type: 'revenue_optimization' });
+    } catch (aiErr) {
+      handleAIError(res, aiErr, null);
+    }
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// Customer Sentiment Analysis
+// ─── 7. Customer Sentiment Analysis ──────────────────────────────────────────
+
 router.post('/sentiment-analysis', async (req, res) => {
   try {
-    const feedback = await pool.query('SELECT cf.*, c.name as customer_name, l.name as location_name FROM customer_feedback cf LEFT JOIN customers c ON cf.customer_id = c.id LEFT JOIN locations l ON cf.location_id = l.id ORDER BY cf.created_at DESC');
+    const { page = 1, limit = 100 } = req.query;
+    const offset = (Number(page) - 1) * Number(limit);
+    const feedback = await pool.query(
+      'SELECT cf.*, c.name as customer_name, l.name as location_name FROM customer_feedback cf LEFT JOIN customers c ON cf.customer_id = c.id LEFT JOIN locations l ON cf.location_id = l.id ORDER BY cf.created_at DESC LIMIT $1 OFFSET $2',
+      [Number(limit), offset]
+    );
 
-    const prompt = `You are an AI customer sentiment analysis expert. Analyze customer feedback for a car wash chain.
+    const prompt = `Analyze customer feedback for a car wash chain and provide sentiment analysis.
 
 Customer Feedback: ${JSON.stringify(feedback.rows)}
 
@@ -218,22 +357,29 @@ Provide a JSON response:
   "nps_estimate": number
 }`;
 
-    const result = await queryAI(
-      'You are a car wash customer sentiment AI. Always respond with valid JSON only.',
-      prompt
-    );
-    res.json({ analysis: result, type: 'sentiment_analysis' });
+    try {
+      const result = await callAI(prompt);
+      res.json({ analysis: result, type: 'sentiment_analysis' });
+    } catch (aiErr) {
+      handleAIError(res, aiErr, null);
+    }
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// Energy Usage Optimization
+// ─── 8. Energy Usage Optimization ────────────────────────────────────────────
+
 router.post('/energy-optimization', async (req, res) => {
   try {
-    const energy = await pool.query('SELECT eu.*, l.name as location_name FROM energy_usage eu JOIN locations l ON eu.location_id = l.id ORDER BY eu.date DESC');
+    const { page = 1, limit = 100 } = req.query;
+    const offset = (Number(page) - 1) * Number(limit);
+    const energy = await pool.query(
+      'SELECT eu.*, l.name as location_name FROM energy_usage eu JOIN locations l ON eu.location_id = l.id ORDER BY eu.date DESC LIMIT $1 OFFSET $2',
+      [Number(limit), offset]
+    );
 
-    const prompt = `You are an AI energy optimization expert for car wash chains. Analyze energy consumption data.
+    const prompt = `Analyze energy consumption data for a car wash chain and provide optimization recommendations.
 
 Energy Usage Data: ${JSON.stringify(energy.rows)}
 
@@ -248,11 +394,12 @@ Provide a JSON response:
   "sustainability_score": number
 }`;
 
-    const result = await queryAI(
-      'You are a car wash energy optimization AI. Always respond with valid JSON only.',
-      prompt
-    );
-    res.json({ analysis: result, type: 'energy_optimization' });
+    try {
+      const result = await callAI(prompt);
+      res.json({ analysis: result, type: 'energy_optimization' });
+    } catch (aiErr) {
+      handleAIError(res, aiErr, null);
+    }
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

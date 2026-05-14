@@ -1,0 +1,97 @@
+{
+  "project": "AICarWashChainOptimizer",
+  "marker": "// === Batch 01 Gaps & Frontend Mounts ===",
+  "features": [
+    {
+      "slug": "agentic-ops-manager-orchestrating-staffing-chemica",
+      "component": "AgenticOpsManagerOrchestratingStaffingChemicaPage",
+      "label": "Agentic ops manager orchestrating staffing, chemicals, and pricing for each location based on weather",
+      "endpoint": "/api/cf-agentic-ops-manager-orchestrating-staffing-chemica",
+      "kind": "cfs"
+    },
+    {
+      "slug": "rag-over-equipment-manuals-and-chemical-sds-for-te",
+      "component": "RagOverEquipmentManualsAndChemicalSdsForTePage",
+      "label": "RAG over equipment manuals and chemical SDS for technician troubleshooting",
+      "endpoint": "/api/cf-rag-over-equipment-manuals-and-chemical-sds-for-te",
+      "kind": "cfs"
+    },
+    {
+      "slug": "real-time-chemical-tank-and-equipment-streaming-wi",
+      "component": "RealTimeChemicalTankAndEquipmentStreamingWiPage",
+      "label": "Real-time chemical-tank and equipment streaming with proactive maintenance dispatch",
+      "endpoint": "/api/cf-real-time-chemical-tank-and-equipment-streaming-wi",
+      "kind": "cfs"
+    },
+    {
+      "slug": "white-label-deployment-for-car-wash-franchise-syst",
+      "component": "WhiteLabelDeploymentForCarWashFranchiseSystPage",
+      "label": "White-label deployment for car-wash franchise systems",
+      "endpoint": "/api/cf-white-label-deployment-for-car-wash-franchise-syst",
+      "kind": "cfs"
+    },
+    {
+      "slug": "no-vision-based-vehicle-damage-pre-wash-check",
+      "component": "NoVisionBasedVehicleDamagePreWashCheckPage",
+      "label": "No vision-based vehicle damage pre-wash check",
+      "endpoint": "/api/gap-no-vision-based-vehicle-damage-pre-wash-check",
+      "kind": "gap"
+    },
+    {
+      "slug": "no-ai-shift-staffing-recommender-wired-to-weather-",
+      "component": "NoAiShiftStaffingRecommenderWiredToWeatherPage",
+      "label": "No AI shift-staffing recommender wired to weather forecast records",
+      "endpoint": "/api/gap-no-ai-shift-staffing-recommender-wired-to-weather-",
+      "kind": "gap"
+    },
+    {
+      "slug": "no-ai-loyalty-program-offer-personalization",
+      "component": "NoAiLoyaltyProgramOfferPersonalizationPage",
+      "label": "No AI loyalty-program offer personalization",
+      "endpoint": "/api/gap-no-ai-loyalty-program-offer-personalization",
+      "kind": "gap"
+    },
+    {
+      "slug": "no-ai-dynamic-equipment-health-model-from-sensor-s",
+      "component": "NoAiDynamicEquipmentHealthModelFromSensorSPage",
+      "label": "No AI dynamic equipment health model from sensor streams",
+      "endpoint": "/api/gap-no-ai-dynamic-equipment-health-model-from-sensor-s",
+      "kind": "gap"
+    },
+    {
+      "slug": "only-6-frontend-pages-vs-21-backend-routes-ui-gap",
+      "component": "Only6FrontendPagesVs21BackendRoutesUiGapPage",
+      "label": "Only 6 frontend pages vs. 21 backend routes \u2014 UI gap",
+      "endpoint": "/api/gap-only-6-frontend-pages-vs-21-backend-routes-ui-gap",
+      "kind": "gap"
+    },
+    {
+      "slug": "no-sms-email-notification-delivery-channel",
+      "component": "NoSmsEmailNotificationDeliveryChannelPage",
+      "label": "No SMS/email notification delivery channel",
+      "endpoint": "/api/gap-no-sms-email-notification-delivery-channel",
+      "kind": "gap"
+    },
+    {
+      "slug": "no-direct-payment-processor-unlimited-wash-subscri",
+      "component": "NoDirectPaymentProcessorUnlimitedWashSubscriPage",
+      "label": "No direct payment processor / unlimited-wash subscription billing",
+      "endpoint": "/api/gap-no-direct-payment-processor-unlimited-wash-subscri",
+      "kind": "gap"
+    },
+    {
+      "slug": "no-license-plate-recognition-loyalty-kiosk-integra",
+      "component": "NoLicensePlateRecognitionLoyaltyKioskIntegraPage",
+      "label": "No license-plate recognition / loyalty kiosk integration",
+      "endpoint": "/api/gap-no-license-plate-recognition-loyalty-kiosk-integra",
+      "kind": "gap"
+    },
+    {
+      "slug": "no-mobile-app-for-tunnel-attendants",
+      "component": "NoMobileAppForTunnelAttendantsPage",
+      "label": "No mobile app for tunnel attendants",
+      "endpoint": "/api/gap-no-mobile-app-for-tunnel-attendants",
+      "kind": "gap"
+    }
+  ]
+}

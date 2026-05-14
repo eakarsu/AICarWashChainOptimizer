@@ -3,6 +3,9 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import FeaturePage from './pages/FeaturePage';
+import AIToolsPage from './pages/AIToolsPage';
+import AIHistory from './pages/AIHistory';
+import Webhooks from './pages/Webhooks';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -43,6 +46,15 @@ function App() {
           } />
           <Route path="/feature/:featureKey" element={
             user ? <FeaturePage user={user} onLogout={handleLogout} /> : <Navigate to="/login" />
+          } />
+          <Route path="/ai-tools/:toolKey" element={
+            user ? <AIToolsPage user={user} onLogout={handleLogout} /> : <Navigate to="/login" />
+          } />
+          <Route path="/ai-history" element={
+            user ? <AIHistory user={user} onLogout={handleLogout} /> : <Navigate to="/login" />
+          } />
+          <Route path="/webhooks" element={
+            user ? <Webhooks user={user} onLogout={handleLogout} /> : <Navigate to="/login" />
           } />
         </Routes>
       </div>

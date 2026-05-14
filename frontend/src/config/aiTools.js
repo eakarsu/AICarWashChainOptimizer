@@ -1,0 +1,103 @@
+// Advanced AI tools (non-CRUD) — composed prompts that take JSON inputs.
+export const AI_TOOLS = [
+  {
+    key: 'price-elasticity',
+    title: 'Price Elasticity Modeler',
+    icon: '📈',
+    color: '#3b82f6',
+    description: 'Test price tiers per location; AI learns the demand curve and suggests revenue-maximizing prices.',
+    fields: [
+      { key: 'location_id', label: 'Location ID', type: 'number', required: true },
+      { key: 'price_history', label: 'Price History (JSON array)', type: 'json', rows: 4, required: true,
+        placeholder: '[{"date":"2024-01-01","service":"Premium","price":15.99}]' },
+      { key: 'demand_history', label: 'Demand History (JSON array)', type: 'json', rows: 4, required: true,
+        placeholder: '[{"date":"2024-01-01","cars":120}]' },
+    ],
+  },
+  {
+    key: 'competitor-benchmarking',
+    title: 'Competitor Benchmarking',
+    icon: '🔍',
+    color: '#8b5cf6',
+    description: 'Compare against competitor pricing and reviews; get differentiation strategy.',
+    fields: [
+      { key: 'competitor_prices', label: 'Competitor Prices (JSON)', type: 'json', rows: 4, required: true },
+      { key: 'reviews', label: 'Market Reviews (JSON)', type: 'json', rows: 4, required: true },
+      { key: 'our_data', label: 'Our Business Data (JSON)', type: 'json', rows: 4, required: true },
+    ],
+  },
+  {
+    key: 'employee-burnout',
+    title: 'Employee Burnout Predictor',
+    icon: '🧠',
+    color: '#ef4444',
+    description: 'Predict burnout risk per employee; recommend rebalancing and wellness programs.',
+    fields: [
+      { key: 'staff', label: 'Staff (JSON array)', type: 'json', rows: 4, required: true },
+      { key: 'hours_data', label: 'Hours Worked (JSON array)', type: 'json', rows: 4, required: true },
+      { key: 'turnover_history', label: 'Turnover History (JSON array)', type: 'json', rows: 4, required: true },
+    ],
+  },
+  {
+    key: 'seasonal-calendar',
+    title: 'Seasonal Demand Calendar',
+    icon: '📅',
+    color: '#10b981',
+    description: 'Generate yearly demand calendar with event-triggered forecasts and promotional plan.',
+    fields: [
+      { key: 'historical_data', label: 'Historical Data (JSON)', type: 'json', rows: 4, required: true },
+      { key: 'upcoming_events', label: 'Upcoming Events (JSON array)', type: 'json', rows: 4, required: true,
+        placeholder: '[{"name":"July 4th","date":"2024-07-04"}]' },
+    ],
+  },
+  {
+    key: 'expansion-roi',
+    title: 'Expansion ROI Model',
+    icon: '🏗️',
+    color: '#f59e0b',
+    description: '5-year revenue forecast and payback analysis for proposed new location.',
+    fields: [
+      { key: 'location_proposal', label: 'Location Proposal (JSON)', type: 'json', rows: 4, required: true,
+        placeholder: '{"address":"123 Main St","rent":8000,"sqft":3000}' },
+      { key: 'demographics', label: 'Demographics (JSON)', type: 'json', rows: 4, required: true,
+        placeholder: '{"population":50000,"median_income":75000,"vehicles_per_household":1.8}' },
+      { key: 'competitors', label: 'Nearby Competitors (JSON array)', type: 'json', rows: 4, required: true },
+    ],
+  },
+  {
+    key: 'water-waste-tracker',
+    title: 'Water/Chemical Waste Tracker',
+    icon: '💧',
+    color: '#06b6d4',
+    description: 'Predict overflows, alert maintenance, calculate environmental impact + savings.',
+    fields: [
+      { key: 'location_id', label: 'Location ID', type: 'number', required: true },
+      { key: 'sensor_data', label: 'Sensor Data (JSON array)', type: 'json', rows: 4, required: true,
+        placeholder: '[{"ts":"2024-01-01T08:00","water_gpm":12,"chem_ml":5.2}]' },
+      { key: 'time_period_days', label: 'Time Window (days)', type: 'number', placeholder: '30' },
+    ],
+  },
+  {
+    key: 'customer-ltv-segmentation',
+    title: 'Customer LTV Segmentation',
+    icon: '💎',
+    color: '#ec4899',
+    description: 'Cluster members by spend + churn; produce personalized retention offers.',
+    fields: [
+      { key: 'customers', label: 'Customers (JSON array)', type: 'json', rows: 6, required: true,
+        placeholder: '[{"id":1,"total_spent":1800,"visits":42,"recency_days":12,"plan":"Premium","churn_risk":0.18}]' },
+    ],
+  },
+  {
+    key: 'supply-chain',
+    title: 'Supply Chain Optimization',
+    icon: '🚚',
+    color: '#22c55e',
+    description: 'Predict reorder times, evaluate bulk discounts, and set optimal inventory levels.',
+    fields: [
+      { key: 'usage_history', label: 'Usage History (JSON array)', type: 'json', rows: 4, required: true },
+      { key: 'current_inventory', label: 'Current Inventory (JSON array)', type: 'json', rows: 4, required: true },
+      { key: 'suppliers', label: 'Suppliers (JSON array, optional)', type: 'json', rows: 3 },
+    ],
+  },
+];

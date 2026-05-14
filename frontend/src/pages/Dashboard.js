@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FEATURES } from '../config/features';
+import { AI_TOOLS } from '../config/aiTools';
 
 function Dashboard({ user, onLogout }) {
   const navigate = useNavigate();
@@ -46,6 +47,51 @@ function Dashboard({ user, onLogout }) {
               </span>
             </div>
           ))}
+        </div>
+
+        <h2 className="dashboard-title" style={{ marginTop: 32 }}>Advanced AI Tools</h2>
+        <p className="dashboard-subtitle">Deep analytical AI tools for chain-level optimization.</p>
+
+        <div className="cards-grid">
+          {AI_TOOLS.map((tool) => (
+            <div
+              key={tool.key}
+              className="feature-card"
+              style={{ '--card-color': tool.color }}
+              onClick={() => navigate(`/ai-tools/${tool.key}`)}
+            >
+              <div className="card-header">
+                <div className="card-icon" style={{ background: `${tool.color}20` }}>{tool.icon}</div>
+                <div className="card-title">{tool.title}</div>
+              </div>
+              <div className="card-description">{tool.description}</div>
+              <span className="card-badge badge-ai">✨ Advanced AI</span>
+            </div>
+          ))}
+          <div
+            className="feature-card"
+            style={{ '--card-color': '#64748b' }}
+            onClick={() => navigate('/ai-history')}
+          >
+            <div className="card-header">
+              <div className="card-icon" style={{ background: '#64748b20' }}>🗂️</div>
+              <div className="card-title">AI Run History</div>
+            </div>
+            <div className="card-description">View all your AI requests and results, paginated and filterable.</div>
+            <span className="card-badge badge-management">📋 History</span>
+          </div>
+          <div
+            className="feature-card"
+            style={{ '--card-color': '#0ea5e9' }}
+            onClick={() => navigate('/webhooks')}
+          >
+            <div className="card-header">
+              <div className="card-icon" style={{ background: '#0ea5e920' }}>🔔</div>
+              <div className="card-title">Webhooks</div>
+            </div>
+            <div className="card-description">Subscribe external systems to chain events (washes, memberships, alerts).</div>
+            <span className="card-badge badge-management">📡 Integrations</span>
+          </div>
         </div>
       </div>
     </>
