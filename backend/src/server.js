@@ -49,6 +49,7 @@ app.use('/api/ai', require('./routes/aiNew'));
 app.use('/api/alerts', require('./routes/alerts'));
 app.use('/api/forecasts', require('./routes/forecasts'));
 app.use('/api/webhooks', require('./routes/webhooks'));
+app.use('/api/custom-views', require('./routes/customViews'));
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 

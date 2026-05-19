@@ -6,6 +6,7 @@ import FeaturePage from './pages/FeaturePage';
 import AIToolsPage from './pages/AIToolsPage';
 import AIHistory from './pages/AIHistory';
 import Webhooks from './pages/Webhooks';
+import CustomViewsPage from './pages/CustomViewsPage';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -55,6 +56,9 @@ function App() {
           } />
           <Route path="/webhooks" element={
             user ? <Webhooks user={user} onLogout={handleLogout} /> : <Navigate to="/login" />
+          } />
+          <Route path="/custom-views" element={
+            user ? <CustomViewsPage user={user} onLogout={handleLogout} /> : <Navigate to="/login" />
           } />
         </Routes>
       </div>
