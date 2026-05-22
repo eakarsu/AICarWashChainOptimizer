@@ -92,6 +92,19 @@ function Dashboard({ user, onLogout }) {
             <div className="card-description">Subscribe external systems to chain events (washes, memberships, alerts).</div>
             <span className="card-badge badge-management">📡 Integrations</span>
           </div>
+          <div
+            data-testid="wash-views-card"
+            className="feature-card"
+            style={{ '--card-color': '#a855f7' }}
+            onClick={() => navigate('/custom-views')}
+          >
+            <div className="card-header">
+              <div className="card-icon" style={{ background: '#a855f720' }}>🧰</div>
+              <div className="card-title">Wash Views</div>
+            </div>
+            <div className="card-description">Custom ops views: bay utilization timeline, location performance heatmap, shift report PDF, promo/pricing rules.</div>
+            <span className="card-badge badge-management">📋 Custom Views</span>
+          </div>
         </div>
       </div>
     </>

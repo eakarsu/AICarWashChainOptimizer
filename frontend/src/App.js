@@ -8,6 +8,11 @@ import AIHistory from './pages/AIHistory';
 import Webhooks from './pages/Webhooks';
 import CustomViewsPage from './pages/CustomViewsPage';
 
+import CodexCustomVizFeature from './pages/CodexCustomVizFeature';
+import CodexOperationsFeature from './pages/CodexOperationsFeature';
+
+import TimelineView from './pages/TimelineView';
+
 function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -39,6 +44,10 @@ function App() {
     <Router>
       <div className="app-container">
         <Routes>
+        <Route path="/insights/timeline" element={<TimelineView />} />
+        <Route path="/codex/custom-viz" element={<CodexCustomVizFeature />} />
+        <Route path="/codex/operations" element={<CodexOperationsFeature />} />
+
           <Route path="/login" element={
             user ? <Navigate to="/" /> : <Login onLogin={handleLogin} />
           } />
