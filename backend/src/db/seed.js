@@ -4,6 +4,8 @@ const path = require('path');
 const bcrypt = require('bcryptjs');
 
 async function seed() {
+  if (process.env.CONFIRM_DEMO_SEED !== 'yes' || process.env.NODE_ENV === 'production') throw new Error('Demo seed requires CONFIRM_DEMO_SEED=yes outside production');
+  if (!process.env.DEMO_PASSWORD || process.env.DEMO_PASSWORD.length < 12) throw new Error('DEMO_PASSWORD must contain at least 12 characters');
   const client = await pool.connect();
   try {
     // Run schema
@@ -12,7 +14,7 @@ async function seed() {
     console.log('Schema created successfully');
 
     // Seed Users
-    const hashedPassword = await bcrypt.hash('password123', 10);
+    const hashedPassword = await bcrypt.hash(process.env.DEMO_PASSWORD, 10);
     await client.query(`DELETE FROM users`);
     await client.query(`INSERT INTO users (email, password, name, role) VALUES
       ('admin@carwash.com', $1, 'Admin User', 'admin'),

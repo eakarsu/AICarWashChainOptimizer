@@ -6,7 +6,7 @@ const pool = new Pool({
   port: process.env.DB_PORT || 5432,
   database: process.env.DB_NAME || 'carwash_optimizer',
   user: process.env.DB_USER || 'carwash_user',
-  password: process.env.DB_PASSWORD || 'carwash_pass',
+  password: process.env.DB_PASSWORD,
 });
 
 module.exports = pool;

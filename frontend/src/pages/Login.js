@@ -21,11 +21,6 @@ function Login({ onLogin }) {
     }
   };
 
-  const handleAutoFill = () => {
-    setEmail('admin@carwash.com');
-    setPassword('password123');
-  };
-
   return (
     <div className="login-page">
       <div className="login-card">
@@ -60,9 +55,6 @@ function Login({ onLogin }) {
             {loading ? 'Signing In...' : 'Sign In'}
           </button>
         </form>
-        <button onClick={handleAutoFill} className="btn-autofill">
-          Demo Login - Click to Auto-Fill Credentials
-        </button>
       </div>
     </div>
   );

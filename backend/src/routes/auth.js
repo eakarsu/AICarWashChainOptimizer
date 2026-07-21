@@ -3,6 +3,7 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const pool = require('../db/connection');
+const authenticate = require('../middleware/auth');
 require('dotenv').config({ path: require('path').join(__dirname, '../../../.env') });
 
 router.post('/login', async (req, res) => {
@@ -26,6 +27,10 @@ router.post('/login', async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+});
+
+router.get('/me', authenticate, (req, res) => {
+  res.json({ user: req.user });
 });
 
 module.exports = router;
