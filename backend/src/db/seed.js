@@ -4,7 +4,7 @@ const path = require('path');
 const bcrypt = require('bcryptjs');
 
 async function seed() {
-  if (process.env.CONFIRM_DEMO_SEED !== 'yes' || process.env.NODE_ENV === 'production') throw new Error('Demo seed requires CONFIRM_DEMO_SEED=yes outside production');
+  if (String(process.env.CONFIRM_DEMO_SEED).toLowerCase() !== 'yes' || process.env.NODE_ENV === 'production') throw new Error('Demo seed requires CONFIRM_DEMO_SEED=yes outside production');
   if (!process.env.DEMO_PASSWORD || process.env.DEMO_PASSWORD.length < 12) throw new Error('DEMO_PASSWORD must contain at least 12 characters');
   const client = await pool.connect();
   try {
@@ -12,6 +12,12 @@ async function seed() {
     const schema = fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8');
     await client.query(schema);
     console.log('Schema created successfully');
+
+    await client.query(`TRUNCATE TABLE
+      energy_usage, revenue_analytics, staffing_schedules, maintenance_predictions,
+      chemical_dosing, weather_forecasts, customer_feedback, customers, memberships,
+      equipment, employees, chemicals, service_packages, locations, users
+      RESTART IDENTITY CASCADE`);
 
     // Seed Users
     const hashedPassword = await bcrypt.hash(process.env.DEMO_PASSWORD, 10);

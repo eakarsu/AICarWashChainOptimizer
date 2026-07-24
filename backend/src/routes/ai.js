@@ -3,6 +3,7 @@ const router = express.Router();
 const pool = require('../db/connection');
 const { aiRateLimiter } = require('../middleware/rateLimiter');
 const { fetchWeatherForecast } = require('../services/weatherService');
+const auth = require('../middleware/auth');
 
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const OPENROUTER_MODEL = process.env.OPENROUTER_MODEL || 'anthropic/claude-3-5-sonnet-20241022';
@@ -78,7 +79,7 @@ function handleAIError(res, err, fallback) {
 }
 
 // Apply rate limiter to all AI routes
-router.use(aiRateLimiter);
+router.use(auth, aiRateLimiter);
 
 // ─── 1. Weather Demand Forecasting (uses live weather when available) ────────
 
