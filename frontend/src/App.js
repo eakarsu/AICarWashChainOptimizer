@@ -1,3 +1,4 @@
+import AIReportLibrary from "./components/AIReportLibrary";
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/Login';
@@ -41,7 +42,7 @@ function App() {
   if (loading) return null;
 
   return (
-    <Router>
+    <><AIReportLibrary floating /><Router>
       <div className="app-container">
         <Routes>
         <Route path="/insights/timeline" element={<TimelineView />} />
@@ -71,7 +72,7 @@ function App() {
           } />
         </Routes>
       </div>
-    </Router>
+    </Router></>
   );
 }
 

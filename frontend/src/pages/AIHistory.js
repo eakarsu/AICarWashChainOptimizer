@@ -1,3 +1,4 @@
+import FormattedAIReport from "../components/FormattedAIReport";
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { fetchAIResults } from '../services/api';
@@ -76,9 +77,7 @@ function AIHistory({ user, onLogout }) {
                       {JSON.stringify(row.request_data, null, 2)}
                     </pre>
                     <h4>Result</h4>
-                    <pre style={{ background: '#0f172a', padding: 8, borderRadius: 8, color: '#e2e8f0', overflow: 'auto', maxHeight: 400 }}>
-                      {JSON.stringify(row.result_data, null, 2)}
-                    </pre>
+                    <FormattedAIReport response={row.result_data} />
                   </>
                 )}
               </div>

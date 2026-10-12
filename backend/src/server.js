@@ -65,6 +65,14 @@ app.use('/api/tank-stream', require('./routes/chemicalTankStream')); // apply pa
 
 app.use('/api/franchise-white-label', require('./routes/franchiseWhiteLabel')); // apply pass 6 — audit custom suggestion
 validateRuntime();
+
+// Advisory AI reports only; native execution and approval routes stay unchanged.
+const aiWorkspaceSupport = require("../aiWorkspaceAdapters.cjs");
+const aiWorkspaceDatabase = require("./db/connection.js");
+app.use('/api/report-workspace', require("../aiWorkspace.cjs").createAIWorkspaceRouter({
+  pool: aiWorkspaceDatabase, authenticateToken: require("./middleware/auth.js"),
+  aiRateLimiter: aiWorkspaceSupport.createWorkspaceLimiter(), features: require("../aiWorkspaceFeatures.json"),
+}));
 app.listen(PORT, () => {
   console.log(`Backend server running on port ${PORT}`);
 });

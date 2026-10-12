@@ -1,6 +1,11 @@
 import React, { useState } from 'react';
 import { login } from '../services/api';
 
+const demoEmail = process.env.REACT_APP_DEMO_EMAIL || 'admin@carwash.com';
+const demoPassword = process.env.REACT_APP_DEMO_PASSWORD || '';
+const demoCredentialsEnabled = process.env.REACT_APP_ENABLE_DEMO_CREDENTIAL_AUTOFILL === 'true'
+  && Boolean(demoPassword);
+
 function Login({ onLogin }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -53,13 +58,22 @@ function Login({ onLogin }) {
           </div>
           <button
             type="button"
-            onClick={() => { setEmail(process.env.REACT_APP_DEMO_EMAIL || ''); setPassword(process.env.REACT_APP_DEMO_PASSWORD || ''); }}
-            disabled={!process.env.REACT_APP_DEMO_EMAIL || !process.env.REACT_APP_DEMO_PASSWORD}
-            aria-label="Auto Fill Demo Credentials"
-            style={{ width: '100%', marginBottom: '12px', padding: '10px 14px', borderRadius: '8px', border: '1px solid currentColor', background: 'transparent', cursor: 'pointer' }}
+            className="btn-autofill"
+            onClick={() => {
+              setEmail(demoEmail);
+              setPassword(demoPassword);
+              setError('');
+            }}
+            disabled={loading || !demoCredentialsEnabled}
+            aria-label="Fill Demo Credentials"
           >
-            Auto Fill Demo Credentials
+            Fill Demo Credentials
           </button>
+          {!demoCredentialsEnabled && (
+            <p style={{ color: '#94a3b8', fontSize: 12, margin: '8px 0 12px' }}>
+              Demo credential filling is available only in an enabled local demo environment.
+            </p>
+          )}
           <button type="submit" className="btn-primary" disabled={loading}>
             {loading ? 'Signing In...' : 'Sign In'}
           </button>

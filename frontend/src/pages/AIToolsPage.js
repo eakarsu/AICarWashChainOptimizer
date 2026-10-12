@@ -1,6 +1,9 @@
+import FullFieldPresets from '../components/FullFieldPresets';
+import FormattedAIReport from '../components/FormattedAIReport';
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { AI_TOOLS } from '../config/aiTools';
+import { presetsForTool } from '../config/aiToolPresets';
 import { runAI, submitAIFeedback } from '../services/api';
 
 function AIToolsPage({ user, onLogout }) {
@@ -82,11 +85,23 @@ function AIToolsPage({ user, onLogout }) {
         <p style={{ color: '#94a3b8', marginBottom: 16 }}>{tool.description}</p>
 
         <form onSubmit={handleSubmit} className="edit-form" style={{ background: '#0f172a', padding: 20, borderRadius: 12 }}>
+          <FullFieldPresets
+            value={formData}
+            presets={presetsForTool(tool, formData)}
+            disabled={loading}
+            onChange={(values) => {
+              setFormData(values);
+              setResult(null);
+              setError('');
+              setRating(0);
+              setFeedbackSent(false);
+            }}
+          />
           {tool.fields.map(f => (
             <div key={f.key} className="form-group">
               <label>{f.label} {f.required && '*'}</label>
               {f.type === 'json' ? (
-                <textarea
+                <textarea data-ai-field={f.key}
                   rows={f.rows || 4}
                   value={formData[f.key] || ''}
                   onChange={e => setFormData({ ...formData, [f.key]: e.target.value })}
@@ -95,7 +110,7 @@ function AIToolsPage({ user, onLogout }) {
                   style={{ fontFamily: 'monospace' }}
                 />
               ) : (
-                <input
+                <input data-ai-field={f.key}
                   type={f.type || 'text'}
                   value={formData[f.key] || ''}
                   onChange={e => setFormData({ ...formData, [f.key]: e.target.value })}
@@ -121,12 +136,7 @@ function AIToolsPage({ user, onLogout }) {
         {result && (
           <div style={{ marginTop: 24 }}>
             <h3 style={{ color: '#e2e8f0' }}>📊 AI Analysis</h3>
-            <pre style={{
-              background: '#0f172a', padding: 16, borderRadius: 12,
-              color: '#e2e8f0', overflow: 'auto', maxHeight: 600
-            }}>
-              {JSON.stringify(result.analysis || result, null, 2)}
-            </pre>
+            <FormattedAIReport response={result.analysis || result} />
 
             <div style={{ marginTop: 16, padding: 16, background: '#1f2937', borderRadius: 12 }}>
               <div style={{ color: '#cbd5e1', marginBottom: 8 }}>Rate this analysis:</div>

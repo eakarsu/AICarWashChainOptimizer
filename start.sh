@@ -41,6 +41,10 @@ elif [ -n "${SEED_USER_EMAIL:-}" ] && [ -n "${SEED_USER_PASSWORD:-}" ]; then
 elif [ -n "${DEMO_EMAIL:-}" ] && [ -n "${DEMO_PASSWORD:-}" ]; then
   demo_credentials_email="$DEMO_EMAIL"
   demo_credentials_password="$DEMO_PASSWORD"
+elif [ -n "${DEMO_PASSWORD:-}" ]; then
+  # The seeded demo account uses this non-secret identifier; keep the password local.
+  demo_credentials_email="admin@carwash.com"
+  demo_credentials_password="$DEMO_PASSWORD"
 elif [ -n "${ADMIN_EMAIL:-}" ] && [ -n "${ADMIN_PASSWORD:-}" ]; then
   demo_credentials_email="$ADMIN_EMAIL"
   demo_credentials_password="$ADMIN_PASSWORD"
