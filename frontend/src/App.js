@@ -8,6 +8,7 @@ import AIToolsPage from './pages/AIToolsPage';
 import AIHistory from './pages/AIHistory';
 import Webhooks from './pages/Webhooks';
 import CustomViewsPage from './pages/CustomViewsPage';
+import FeaturePack29a from './pages/FeaturePack29a';
 
 import CodexCustomVizFeature from './pages/CodexCustomVizFeature';
 import CodexOperationsFeature from './pages/CodexOperationsFeature';
@@ -67,6 +68,7 @@ function App() {
           <Route path="/webhooks" element={
             user ? <Webhooks user={user} onLogout={handleLogout} /> : <Navigate to="/login" />
           } />
+          <Route path="/feature-pack" element={user ? <FeaturePack29a /> : <Navigate to="/login" />} />
           <Route path="/custom-views" element={
             user ? <CustomViewsPage user={user} onLogout={handleLogout} /> : <Navigate to="/login" />
           } />

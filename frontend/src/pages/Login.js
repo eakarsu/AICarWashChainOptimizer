@@ -12,18 +12,22 @@ function Login({ onLogin }) {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const signInWith = async (loginEmail, loginPassword) => {
     setError('');
     setLoading(true);
     try {
-      const data = await login(email, password);
+      const data = await login(loginEmail, loginPassword);
       onLogin(data);
     } catch (err) {
       setError(err.message || 'Login failed');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    await signInWith(email, password);
   };
 
   return (
@@ -62,7 +66,7 @@ function Login({ onLogin }) {
             onClick={() => {
               setEmail(demoEmail);
               setPassword(demoPassword);
-              setError('');
+              signInWith(demoEmail, demoPassword);
             }}
             disabled={loading || !demoCredentialsEnabled}
             aria-label="Fill Demo Credentials"
